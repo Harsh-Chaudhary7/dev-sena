@@ -2,14 +2,18 @@
   "name": "dev-sena",
   "displayName": "dev-sena",
   "description": "Dev-Sena is a smart terminal companion for VS Code that monitors logs in real time and helps developers understand errors instantly.",
-  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Harsh-Chaudhary7/dev-sena"
+  },
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.109.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": ["*"],
+  "activationEvents": ["onStartupFinished"],
   "main": "./src/extension.js",
   "contributes": {
     "commands": [
