@@ -21,7 +21,6 @@ function activate(context) {
     vscode.StatusBarAlignment.Left
   );
 
-  statusBar.text = "⚡ Speed: 0 CPM";
   statusBar.show();
 
   context.subscriptions.push(statusBar);
