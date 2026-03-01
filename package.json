@@ -6,7 +6,9 @@
     "type": "git",
     "url": "https://github.com/Harsh-Chaudhary7/dev-sena"
   },
-  "version": "0.0.3",
+  "publisher": "HarshChaudhary",
+  "icon": "images/DevLogo.png",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.109.0"
   },
