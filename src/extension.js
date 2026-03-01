@@ -1,102 +1,148 @@
 const vscode = require("vscode");
 
 /* =========================
-   DEV-SENA ERROR BRAIN (V2)
+   GLOBALS (V3 SPEEDOMETER)
 ========================= */
-// const ERROR_DICTIONARY = {
-// 	"missing script":
-// 		"❌ npm script not found. Check package.json → scripts section.",
-// 	module_not_found: "📦 Module missing. Try running: npm install",
-// 	econnrefused: "🔌 Connection refused. Server may not be running.",
-// 	"command not found":
-// 		"⚠️ Command not recognized. Check spelling or install package.",
-// };
+let statusBar;
+let keyCount = 0;
+let startTime = Date.now();
+let lastTypingTime = Date.now();
+let idleTimer;
 
 /* =========================
    ACTIVATE EXTENSION
 ========================= */
 function activate(context) {
-	vscode.window.showInformationMessage("Dev-Sena activated 🚀");
 
-	/* =========================
-     V1 — LOG WATCHER
-  ========================= */
-	const startExec = vscode.window.onDidStartTerminalShellExecution((event) => {
-		const cmd = event.execution.commandLine.value.toLowerCase();
+  vscode.window.showInformationMessage("Dev-Sena activated 🚀");
 
-		console.log("Command started:", cmd);
+  /* ===== V3 SPEEDOMETER ===== */
+  statusBar = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left
+  );
 
-		// simple AI-ish hints
-		if (cmd.includes("npm run")) {
-			vscode.window.showInformationMessage("🚀 Running npm script...");
-		}
+  statusBar.text = "⚡ Speed: 0 CPM";
+  statusBar.show();
 
-		if (cmd.includes("python")) {
-			vscode.window.showInformationMessage("🐍 Python script running...");
-		}
-	});
+  context.subscriptions.push(statusBar);
+  vscode.window.showInformationMessage("⚡ Speedometer enabled! Type to see your CPM.");
 
-	/* =========================
-     V2 — ERROR EXPLAINER
-  ========================= */
-	const endExec =
-  vscode.window.onDidEndTerminalShellExecution((event) => {
+  // Detect typing (ignore backspace/delete)
+  const typingListener =
+    vscode.workspace.onDidChangeTextDocument((event) => {
 
-    const cmd =
-      event.execution.commandLine.value.toLowerCase();
+      let addedChars = 0;
 
-    // command failed
-    if (event.exitCode !== 0) {
+      event.contentChanges.forEach(change => {
+        if (change.text && change.text.length > 0) {
+          addedChars += change.text.length;
+        }
+      });
 
-      // npm script failed
-      if (cmd.startsWith("npm run")) {
-        vscode.window.showErrorMessage(
-          "❌ npm script failed. Check package.json → scripts section."
+      // Ignore deletions
+      if (addedChars === 0) return;
+
+      keyCount += addedChars;
+      lastTypingTime = Date.now();
+
+      updateSpeed();
+
+      // Reset after 20s idle
+      clearTimeout(idleTimer);
+
+      idleTimer = setTimeout(() => {
+        keyCount = 0;
+        startTime = Date.now();
+        statusBar.text = "⚡ Speed: 0 CPM";
+      }, 10000);
+    });
+
+  context.subscriptions.push(typingListener);
+
+  /* ===== V1 LOG WATCHER ===== */
+  const startExec =
+    vscode.window.onDidStartTerminalShellExecution((event) => {
+
+      const cmd =
+        event.execution.commandLine.value.toLowerCase();
+
+      if (cmd.includes("npm run")) {
+        vscode.window.showInformationMessage(
+          "🚀 Running npm script..."
         );
-        return;
       }
 
-      // node execution failed
-      if (cmd.startsWith("node")) {
-        vscode.window.showErrorMessage(
-          "📦 Node execution failed. Check file path or missing modules."
+      if (cmd.includes("python")) {
+        vscode.window.showInformationMessage(
+          "🐍 Python script running..."
         );
-        return;
       }
+    });
 
-      // python failed
-      if (cmd.startsWith("python")) {
+  /* ===== V2 ERROR EXPLAINER ===== */
+  const endExec =
+    vscode.window.onDidEndTerminalShellExecution((event) => {
+
+      const cmd =
+        event.execution.commandLine.value.toLowerCase();
+
+      if (event.exitCode !== 0) {
+
+        if (cmd.startsWith("npm run")) {
+          vscode.window.showErrorMessage(
+            "❌ npm script failed. Check package.json scripts."
+          );
+          return;
+        }
+
+        if (cmd.startsWith("node")) {
+          vscode.window.showErrorMessage(
+            "📦 Node command failed. Check file path or dependencies."
+          );
+          return;
+        }
+
+        if (cmd.startsWith("python")) {
+          vscode.window.showErrorMessage(
+            "🐍 Python execution failed. Check environment or packages."
+          );
+          return;
+        }
+
+        if (!cmd.includes(" ")) {
+          vscode.window.showErrorMessage(
+            "⚠️ Command not recognized. Check spelling or install it."
+          );
+          return;
+        }
+
         vscode.window.showErrorMessage(
-          "🐍 Python command failed. Check environment or dependencies."
+          "❌ Command failed — check terminal output."
         );
-        return;
       }
+    });
 
-      // command not found (best guess)
-      if (!cmd.includes(" ")) {
-        vscode.window.showErrorMessage(
-          "⚠️ Command not recognized. Check spelling or installation."
-        );
-        return;
-      }
-
-      // fallback
-      vscode.window.showErrorMessage(
-        "❌ Command failed — check terminal output."
-      );
-    }
-  });
-
-	context.subscriptions.push(startExec);
-	context.subscriptions.push(endExec);
+  context.subscriptions.push(startExec);
+  context.subscriptions.push(endExec);
 }
 
 /* =========================
-   DEACTIVATE
+   SPEED CALCULATION
 ========================= */
+function updateSpeed() {
+
+  const minutes =
+    (Date.now() - startTime) / 60000;
+
+  const cpm =
+    Math.max(0, Math.floor(keyCount / minutes || 0));
+
+  statusBar.text = `⚡ Speed: ${cpm} CPM`;
+}
+
 function deactivate() {}
 
 module.exports = {
-	activate,
-	deactivate,
+  activate,
+  deactivate,
 };
